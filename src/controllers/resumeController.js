@@ -843,6 +843,13 @@ exports.getAllSubmittedResumes = (req, res) => {
   // Get the search term from query parameters or use a default value
   const searchTerm = req.query.search || ""; // If no search term is provided, search for an empty string
 
+  // Get the current page and limit (number of records per page) from query params, default to 1 and 10 if not provided
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 500;
+
+  // Calculate the offset for pagination
+  const offset = (page - 1) * limit;
+
   // Sanitize input by escaping potentially harmful characters
   const sanitizedSearchTerm = db.escape("%" + searchTerm + "%");
 
@@ -897,7 +904,7 @@ exports.getAllSubmittedResumes = (req, res) => {
         sr.feedback,
         sr.efficiency_score
     ) LIKE ${sanitizedSearchTerm}
-    LIMIT 500;
+    LIMIT ${limit} OFFSET ${offset};
   `;
 
   db.query(query, (err, results) => {
@@ -908,8 +915,84 @@ exports.getAllSubmittedResumes = (req, res) => {
       });
     }
 
-    // Send the results back as JSON
-    res.status(200).json({ submittedResumes: results });
+    // Get the total count of records matching the search
+    const countQuery = `
+      SELECT COUNT(*) AS totalCount
+      FROM SubmittedResumes sr
+      WHERE CONCAT_WS(' ',
+        sr.resume_id,
+        sr.freelancer_id,
+        sr.first_name,
+        sr.middle_name,
+        sr.last_name,
+        sr.date_of_birth,
+        sr.gender,
+        sr.nationality,
+        sr.marital_status,
+        sr.passport,
+        sr.hobbies,
+        sr.languages_known,
+        sr.address,
+        sr.landmark,
+        sr.city,
+        sr.state,
+        sr.pincode,
+        sr.mobile,
+        sr.email,
+        sr.ssc_result,
+        sr.ssc_board,
+        sr.ssc_year_of_passing,
+        sr.hsc_result,
+        sr.hsc_board,
+        sr.hsc_year_of_passing,
+        sr.graduation_degree,
+        sr.graduation_result,
+        sr.graduation_university,
+        sr.graduation_year_of_passing,
+        sr.post_graduation_degree,
+        sr.post_graduation_result,
+        sr.post_graduation_university,
+        sr.post_graduation_year_of_passing,
+        sr.higher_education_qualification,
+        sr.total_work_experience_months,
+        sr.number_of_companies_worked,
+        sr.last_employer,
+        sr.submission_date,
+        sr.admin_feedback,
+        sr.status,
+        sr.rejection_reason,
+        sr.resume_earning,
+        sr.approval_status,
+        sr.feedback,
+        sr.efficiency_score
+      ) LIKE ${sanitizedSearchTerm};
+    `;
+
+    db.query(countQuery, (countErr, countResult) => {
+      if (countErr) {
+        return res.status(500).json({
+          error: "Error fetching total count",
+          details: countErr,
+        });
+      }
+
+      // Total records count
+      const totalCount = countResult[0].totalCount;
+
+      // Calculate total pages
+      const totalPages = Math.ceil(totalCount / limit);
+
+      // Send the results back as JSON
+      res.status(200).json({
+        submittedResumes: results,
+        pagination: {
+          totalCount,
+          totalPages,
+          currentPage: page,
+          limit,
+        },
+      });
+    });
   });
 };
 

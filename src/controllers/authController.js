@@ -261,7 +261,7 @@ exports.signUp = async (req, res) => {
 //       const token = jwt.sign(
 //         { id: admin.admin_id, role: "admin" },
 //         process.env.JWT_SECRET,
-//         { expiresIn: "24h" }
+//         { expiresIn: "60d" }
 //       );
 
 //       return res.json({ token, role: "admin" });
@@ -283,7 +283,7 @@ exports.signUp = async (req, res) => {
 //       const token = jwt.sign(
 //         { id: freelancer.freelancer_id, role: "freelancer" },
 //         process.env.JWT_SECRET,
-//         { expiresIn: "24h" }
+//         { expiresIn: "60d" }
 //       );
 
 //       return res.json({ token, role: "freelancer" });
@@ -326,7 +326,7 @@ exports.login = async (req, res) => {
       const token = jwt.sign(
         { id: admin.admin_id, role: "admin" },
         process.env.JWT_SECRET,
-        { expiresIn: "24h" }
+        { expiresIn: "60d" }
       );
 
       return res.json({ token, role: "admin" });
@@ -347,7 +347,7 @@ exports.login = async (req, res) => {
       const token = jwt.sign(
         { id: freelancer.freelancer_id, role: "freelancer" },
         process.env.JWT_SECRET,
-        { expiresIn: "24h" }
+        { expiresIn: "60d" }
       );
 
       return res.json({ token, role: "freelancer" });

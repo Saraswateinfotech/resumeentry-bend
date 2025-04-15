@@ -840,23 +840,78 @@ exports.GetUserPaymentReport = (req, res) => {
 
 // API endpoint to fetch submitted resumes
 exports.getAllSubmittedResumes = (req, res) => {
+  // Get the search term from query parameters or use a default value
+  const searchTerm = req.query.search || ""; // If no search term is provided, search for an empty string
+
+  // Sanitize input by escaping potentially harmful characters
+  const sanitizedSearchTerm = db.escape("%" + searchTerm + "%");
+
   const query = `
     SELECT sr.*, f.name AS freelancer_name
     FROM SubmittedResumes sr
-    INNER JOIN Freelancer f ON sr.freelancer_id = f.user_id 
-    LIMIT 500
+    INNER JOIN Freelancer f ON sr.freelancer_id = f.user_id
+    WHERE CONCAT_WS(' ',
+        sr.resume_id,
+        sr.freelancer_id,
+        sr.first_name,
+        sr.middle_name,
+        sr.last_name,
+        sr.date_of_birth,
+        sr.gender,
+        sr.nationality,
+        sr.marital_status,
+        sr.passport,
+        sr.hobbies,
+        sr.languages_known,
+        sr.address,
+        sr.landmark,
+        sr.city,
+        sr.state,
+        sr.pincode,
+        sr.mobile,
+        sr.email,
+        sr.ssc_result,
+        sr.ssc_board,
+        sr.ssc_year_of_passing,
+        sr.hsc_result,
+        sr.hsc_board,
+        sr.hsc_year_of_passing,
+        sr.graduation_degree,
+        sr.graduation_result,
+        sr.graduation_university,
+        sr.graduation_year_of_passing,
+        sr.post_graduation_degree,
+        sr.post_graduation_result,
+        sr.post_graduation_university,
+        sr.post_graduation_year_of_passing,
+        sr.higher_education_qualification,
+        sr.total_work_experience_months,
+        sr.number_of_companies_worked,
+        sr.last_employer,
+        sr.submission_date,
+        sr.admin_feedback,
+        sr.status,
+        sr.rejection_reason,
+        sr.resume_earning,
+        sr.approval_status,
+        sr.feedback,
+        sr.efficiency_score
+    ) LIKE ${sanitizedSearchTerm}
+    LIMIT 500;
   `;
 
   db.query(query, (err, results) => {
     if (err) {
-      return res.status(500).json({ error: 'Error fetching submitted resumes', details: err });
+      return res.status(500).json({
+        error: "Error fetching submitted resumes",
+        details: err,
+      });
     }
 
     // Send the results back as JSON
     res.status(200).json({ submittedResumes: results });
   });
 };
-
 
 
 // API endpoint to update the status of a resume based on resume_id and freelancer_id

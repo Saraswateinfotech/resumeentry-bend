@@ -9,30 +9,30 @@ console.log('hi there!');
 
 const app = express();
 
-// Allow requests from multiple frontend URLs
+// Allow requests from specific frontend URLs
 const allowedOrigins = [
   "https://resumesentry-frontend.vercel.app",
   "https://resumesentry-admin-dashboard-two.vercel.app"
 ];
 
 // CORS options with dynamic origin handling
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, Postman, or file:// protocol)
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS from origin: " + origin));
-    }
-  },
-  credentials: true, // Allow cookies and credentials
-  optionsSuccessStatus: 200, // Some legacy browsers choke on 204
+const corsOptionsDelegate = function (req, callback) {
+  const origin = req.header('Origin');
+  if (!origin || allowedOrigins.includes(origin)) {
+    callback(null, {
+      origin: true,
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+    });
+  } else {
+    callback(new Error("Not allowed by CORS from origin: " + origin), null);
+  }
 };
 
-// Apply the CORS middleware
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); 
-
+// Apply the CORS middleware before anything else
+app.use(cors(corsOptionsDelegate));
+app.options("*", cors(corsOptionsDelegate)); // handle preflight
 
 app.use(bodyParser.json());
 app.use(express.json({ limit: '2gb' }));

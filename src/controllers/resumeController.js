@@ -843,7 +843,8 @@ exports.getAllSubmittedResumes = (req, res) => {
   const query = `
     SELECT sr.*, f.name AS freelancer_name
     FROM SubmittedResumes sr
-    INNER JOIN Freelancer f ON sr.freelancer_id = f.user_id
+    INNER JOIN Freelancer f ON sr.freelancer_id = f.user_id 
+    LIMIT 100
   `;
 
   db.query(query, (err, results) => {

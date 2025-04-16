@@ -845,7 +845,7 @@ exports.getAllSubmittedResumes = (req, res) => {
 
   // Get the current page and limit (number of records per page) from query params, default to 1 and 10 if not provided
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 500;
+  const limit = parseInt(req.query.limit) || 1000;
 
   // Calculate the offset for pagination
   const offset = (page - 1) * limit;

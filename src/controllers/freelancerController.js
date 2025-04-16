@@ -34,19 +34,122 @@ exports.getFreelancerDetails = async (req, res) => {
 };
 
 exports.getAllFreelancers = (req, res) => {
-  const sql = `SELECT * FROM Freelancer`;
+  // Get the search term from query parameters or use a default value
+  const searchTerm = req.query.search || ""; // If no search term is provided, search for an empty string
 
-  db.query(sql, (err, results) => {
-    if (err)
-      return res.status(500).json({ error: "Database error", details: err });
+  // Get the current page and limit (number of records per page) from query params, default to 1 and 10 if not provided
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 500;
 
-    if (results.length === 0) {
-      return res.status(404).json({ message: "No freelancers found" });
+  // Calculate the offset for pagination
+  const offset = (page - 1) * limit;
+
+  // Sanitize input by escaping potentially harmful characters
+  const sanitizedSearchTerm = db.escape("%" + searchTerm + "%");
+
+  // Query to fetch freelancers with search functionality
+  const query = `
+    SELECT * 
+    FROM Freelancer
+    WHERE CONCAT_WS(' ', 
+      user_id, 
+      name, 
+      start_date, 
+      end_date, 
+      phone_number, 
+      alternate_phone, 
+      email, 
+      password, 
+      date_of_birth, 
+      gender, 
+      address, 
+      city, 
+      state, 
+      country, 
+      pincode, 
+      education, 
+      occupation, 
+      monthly_income, 
+      is_approved, 
+      is_active, 
+      joining_bonus, 
+      total_earnings, 
+      total_resumes_completed, 
+      current_resume_id, 
+      resumes_rejected, 
+      textpassword
+    ) LIKE ${sanitizedSearchTerm}
+    LIMIT ${limit} OFFSET ${offset};
+  `;
+
+  // Execute query to get the freelancers based on the search term
+  db.query(query, (err, results) => {
+    if (err) {
+      return res.status(500).json({
+        error: "Error fetching freelancers",
+        details: err,
+      });
     }
 
-    res.status(200).json({
-      message: "All freelancers fetched successfully",
-      freelancers: results,
+    // Query to get the total count of freelancers matching the search criteria
+    const countQuery = `
+      SELECT COUNT(*) AS totalCount
+      FROM Freelancer
+      WHERE CONCAT_WS(' ', 
+        user_id, 
+        name, 
+        start_date, 
+        end_date, 
+        phone_number, 
+        alternate_phone, 
+        email, 
+        password, 
+        date_of_birth, 
+        gender, 
+        address, 
+        city, 
+        state, 
+        country, 
+        pincode, 
+        education, 
+        occupation, 
+        monthly_income, 
+        is_approved, 
+        is_active, 
+        joining_bonus, 
+        total_earnings, 
+        total_resumes_completed, 
+        current_resume_id, 
+        resumes_rejected, 
+        textpassword
+      ) LIKE ${sanitizedSearchTerm};
+    `;
+
+    // Execute count query to get the total number of matching freelancers
+    db.query(countQuery, (countErr, countResult) => {
+      if (countErr) {
+        return res.status(500).json({
+          error: "Error fetching total count",
+          details: countErr,
+        });
+      }
+
+      // Total records count
+      const totalCount = countResult[0].totalCount;
+
+      // Calculate total pages
+      const totalPages = Math.ceil(totalCount / limit);
+
+      // Send the results back as JSON with pagination info
+      res.status(200).json({
+        freelancers: results,
+        pagination: {
+          totalCount,
+          totalPages,
+          currentPage: page,
+          limit,
+        },
+      });
     });
   });
 };
